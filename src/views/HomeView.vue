@@ -58,6 +58,14 @@ type KpiCard = {
   helper: string
 }
 
+type SeasonalInsight = {
+  key: string
+  title: string
+  description: string
+  icon: string
+  tone: 'growth' | 'operations' | 'risk'
+}
+
 const monthlyData = metricsData as MonthRecord[]
 const selectedMonth = ref('All')
 
@@ -257,6 +265,156 @@ const kpiCards = computed<KpiCard[]>(() => [
 ])
 
 const labels = computed(() => monthlyData.map((item) => item.label))
+
+const seasonalInsights = computed<SeasonalInsight[]>(() => {
+  if (monthlyData.length === 0) {
+    return [
+      {
+        key: 'peak-revenue',
+        title: 'Peak Revenue Month',
+        description: 'No dataset available yet.',
+        icon: 'mdi-trending-up',
+        tone: 'growth',
+      },
+      {
+        key: 'strongest-quarter',
+        title: 'Highest Shipment Season',
+        description: 'No dataset available yet.',
+        icon: 'mdi-truck-fast-outline',
+        tone: 'operations',
+      },
+      {
+        key: 'service-risk',
+        title: 'Service Risk Watch',
+        description: 'No dataset available yet.',
+        icon: 'mdi-alert-outline',
+        tone: 'risk',
+      },
+    ]
+  }
+
+  const first = monthlyData[0] as MonthRecord
+  const peakRevenue = monthlyData.reduce((max, item) => (item.revenue > max.revenue ? item : max), first)
+  const weakestOnTime = monthlyData.reduce(
+    (min, item) => (item.onTimeDeliveryRate < min.onTimeDeliveryRate ? item : min),
+    first,
+  )
+
+  const quarterTotals = [0, 0, 0, 0]
+  monthlyData.forEach((item, index) => {
+    const quarterIndex = Math.floor(index / 3)
+    quarterTotals[quarterIndex] = (quarterTotals[quarterIndex] ?? 0) + item.shipmentVolume
+  })
+
+  const strongestQuarterIndex = quarterTotals.reduce(
+    (maxIndex, total, index, arr) => {
+      const currentMax = arr[maxIndex] ?? Number.NEGATIVE_INFINITY
+      return total > currentMax ? index : maxIndex
+    },
+    0,
+  )
+  const strongestQuarter = `Q${strongestQuarterIndex + 1}`
+  const strongestQuarterTotal = quarterTotals[strongestQuarterIndex] ?? 0
+
+  return [
+    {
+      key: 'peak-revenue',
+      title: 'Peak Revenue Month',
+      description: `${peakRevenue.label} led the year at ${formatCurrency(peakRevenue.revenue)}.`,
+      icon: 'mdi-trending-up',
+      tone: 'growth',
+    },
+    {
+      key: 'strongest-quarter',
+      title: 'Highest Shipment Season',
+      description: `${strongestQuarter} moved ${formatNumber(strongestQuarterTotal)} total shipments.`,
+      icon: 'mdi-truck-fast-outline',
+      tone: 'operations',
+    },
+    {
+      key: 'service-risk',
+      title: 'Service Risk Watch',
+      description: `${weakestOnTime.label} had the lowest on-time rate at ${formatPercent(weakestOnTime.onTimeDeliveryRate)}.`,
+      icon: 'mdi-alert-outline',
+      tone: 'risk',
+    },
+  ]
+})
+
+function formatDelta(current: number, previous: number): string {
+  const delta = ((current - previous) / previous) * 100
+  return `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`
+}
+
+const monthContextInsights = computed<SeasonalInsight[]>(() => {
+  const current = selectedRecord.value
+  if (!current) return []
+
+  const previous = comparisonRecord.value
+  if (!previous) {
+    return [
+      {
+        key: 'month-baseline',
+        title: 'Baseline Month',
+        description: `${current.label} starts the annual series, so trend comparisons begin next month.`,
+        icon: 'mdi-timeline-clock-outline',
+        tone: 'operations',
+      },
+      {
+        key: 'month-service',
+        title: 'Service Reliability',
+        description: `On-time performance for ${current.label} was ${formatPercent(current.onTimeDeliveryRate)}.`,
+        icon: 'mdi-timer-check-outline',
+        tone: 'growth',
+      },
+      {
+        key: 'month-exceptions',
+        title: 'Exception Load',
+        description: `${formatNumber(current.exceptions)} exceptions were logged against ${formatNumber(current.orders)} orders.`,
+        icon: 'mdi-alert-outline',
+        tone: 'risk',
+      },
+    ]
+  }
+
+  return [
+    {
+      key: 'month-revenue',
+      title: 'Revenue vs Prior Month',
+      description: `${formatDelta(current.revenue, previous.revenue)} from ${previous.label} to ${current.label}.`,
+      icon: current.revenue >= previous.revenue ? 'mdi-trending-up' : 'mdi-trending-down',
+      tone: current.revenue >= previous.revenue ? 'growth' : 'risk',
+    },
+    {
+      key: 'month-volume',
+      title: 'Shipment Throughput Shift',
+      description: `${formatDelta(current.shipmentVolume, previous.shipmentVolume)} in shipment volume vs ${previous.label}.`,
+      icon: 'mdi-truck-fast-outline',
+      tone: current.shipmentVolume >= previous.shipmentVolume ? 'operations' : 'risk',
+    },
+    {
+      key: 'month-quality',
+      title: 'On-Time and Exceptions',
+      description: `${formatPercent(current.onTimeDeliveryRate)} on-time with ${formatNumber(current.exceptions)} exceptions.`,
+      icon: 'mdi-clipboard-pulse-outline',
+      tone: current.onTimeDeliveryRate >= previous.onTimeDeliveryRate ? 'growth' : 'risk',
+    },
+  ]
+})
+
+const insightSectionTitle = computed(() =>
+  selectedMonth.value === 'All' ? 'Seasonal Insights' : `${kpiCurrent.value.scopeLabel} Context Insights`,
+)
+
+const insightSectionSubtitle = computed(() =>
+  selectedMonth.value === 'All'
+    ? 'Year-overview highlights detected from the 2025 monthly pattern'
+    : 'Month-specific operational context based on prior month comparison',
+)
+
+const activeInsights = computed(() =>
+  selectedMonth.value === 'All' ? seasonalInsights.value : monthContextInsights.value,
+)
 
 const selectedLabel = computed(() => {
   if (selectedMonth.value === 'All') return 'All'
@@ -530,6 +688,28 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
         </v-card-text>
       </v-card>
 
+      <v-card v-if="activeInsights.length" rounded="lg" border class="mb-4 seasonal-insights">
+        <v-card-item>
+          <v-card-title class="text-subtitle-1 font-weight-bold">{{ insightSectionTitle }}</v-card-title>
+          <v-card-subtitle>{{ insightSectionSubtitle }}</v-card-subtitle>
+        </v-card-item>
+        <v-card-text>
+          <v-row class="insights-row">
+            <v-col v-for="insight in activeInsights" :key="insight.key" cols="12" md="4" class="insight-col">
+              <div class="insight-item" :class="`insight-item--${insight.tone}`" tabindex="0">
+                <div class="insight-icon-wrap" :class="`insight-icon-wrap--${insight.tone}`" aria-hidden="true">
+                  <v-icon :icon="insight.icon" class="insight-icon" size="38" />
+                </div>
+                <div>
+                  <div class="insight-title">{{ insight.title }}</div>
+                  <div class="insight-text">{{ insight.description }}</div>
+                </div>
+              </div>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+
       <v-row class="mb-4 staged-row">
         <v-col v-for="card in kpiCards" :key="card.key" cols="12" sm="6" lg="3">
           <v-card rounded="lg" border height="100%" class="kpi-card">
@@ -704,6 +884,232 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
   border-color: rgba(129, 170, 217, 0.28);
 }
 
+.seasonal-insights {
+  background: linear-gradient(120deg, rgba(21, 35, 61, 0.92), rgba(14, 27, 50, 0.88));
+  border-color: rgba(126, 168, 215, 0.28);
+}
+
+.insight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  min-height: 124px;
+  border-radius: 14px;
+  border: 1px solid rgba(129, 168, 213, 0.24);
+  background: linear-gradient(155deg, rgba(24, 39, 67, 0.88), rgba(16, 30, 54, 0.84));
+  box-shadow: 0 8px 20px rgba(8, 16, 30, 0.22);
+  animation: insight-enter 520ms ease-out both;
+  outline: none;
+}
+
+.insight-icon-wrap {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 28% 28%, rgba(159, 208, 255, 0.34), transparent 52%),
+    linear-gradient(145deg, rgba(33, 70, 117, 0.86), rgba(23, 46, 82, 0.92));
+  border: 1px solid rgba(157, 199, 239, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(230, 245, 255, 0.14),
+    0 8px 16px rgba(9, 20, 40, 0.26);
+  transition: transform 220ms ease, box-shadow 220ms ease, filter 220ms ease;
+}
+
+.insight-icon {
+  color: #bfe0ff;
+}
+
+.insight-item--growth {
+  border-color: rgba(113, 214, 177, 0.35);
+}
+
+.insight-item--operations {
+  border-color: rgba(129, 185, 236, 0.35);
+}
+
+.insight-item--risk {
+  border-color: rgba(245, 157, 125, 0.35);
+}
+
+.insight-icon-wrap--growth {
+  background:
+    radial-gradient(circle at 28% 28%, rgba(128, 239, 200, 0.32), transparent 52%),
+    linear-gradient(145deg, rgba(33, 122, 94, 0.88), rgba(20, 70, 56, 0.92));
+  border-color: rgba(147, 238, 204, 0.42);
+}
+
+.insight-icon-wrap--growth .insight-icon {
+  color: #b2ffe2;
+}
+
+.insight-icon-wrap--operations {
+  background:
+    radial-gradient(circle at 28% 28%, rgba(159, 208, 255, 0.34), transparent 52%),
+    linear-gradient(145deg, rgba(33, 70, 117, 0.86), rgba(23, 46, 82, 0.92));
+  border-color: rgba(157, 199, 239, 0.35);
+}
+
+.insight-icon-wrap--operations .insight-icon {
+  color: #bfe0ff;
+}
+
+.insight-icon-wrap--risk {
+  background:
+    radial-gradient(circle at 28% 28%, rgba(255, 191, 170, 0.34), transparent 52%),
+    linear-gradient(145deg, rgba(129, 62, 48, 0.9), rgba(82, 34, 28, 0.92));
+  border-color: rgba(246, 179, 161, 0.4);
+}
+
+.insight-icon-wrap--risk .insight-icon {
+  color: #ffd0c1;
+}
+
+.insight-item:hover .insight-icon-wrap,
+.insight-item:focus-within .insight-icon-wrap {
+  transform: translateY(-1px) scale(1.02);
+  filter: saturate(1.08);
+}
+
+.insight-item:focus-visible {
+  border-color: rgba(166, 206, 246, 0.68);
+  box-shadow:
+    0 0 0 2px rgba(137, 194, 251, 0.32),
+    0 10px 22px rgba(8, 16, 30, 0.28);
+}
+
+.insight-item:hover .insight-icon-wrap--growth,
+.insight-item:focus-within .insight-icon-wrap--growth {
+  box-shadow:
+    inset 0 1px 0 rgba(230, 255, 244, 0.22),
+    0 10px 18px rgba(9, 22, 18, 0.32),
+    0 0 18px rgba(100, 241, 188, 0.28);
+  animation: insight-glow-growth 1.9s ease-in-out infinite;
+}
+
+.insight-item:hover .insight-icon-wrap--operations,
+.insight-item:focus-within .insight-icon-wrap--operations {
+  box-shadow:
+    inset 0 1px 0 rgba(230, 245, 255, 0.22),
+    0 10px 18px rgba(9, 20, 40, 0.32),
+    0 0 18px rgba(122, 187, 247, 0.28);
+  animation: insight-glow-ops 1.9s ease-in-out infinite;
+}
+
+.insight-item:hover .insight-icon-wrap--risk,
+.insight-item:focus-within .insight-icon-wrap--risk {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 228, 0.2),
+    0 10px 18px rgba(34, 14, 11, 0.34),
+    0 0 18px rgba(255, 167, 142, 0.26);
+  animation: insight-glow-risk 1.9s ease-in-out infinite;
+}
+
+@keyframes insight-glow-growth {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(230, 255, 244, 0.2),
+      0 10px 18px rgba(9, 22, 18, 0.3),
+      0 0 14px rgba(100, 241, 188, 0.2);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(230, 255, 244, 0.24),
+      0 11px 20px rgba(9, 22, 18, 0.36),
+      0 0 21px rgba(100, 241, 188, 0.34);
+  }
+}
+
+@keyframes insight-glow-ops {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(230, 245, 255, 0.2),
+      0 10px 18px rgba(9, 20, 40, 0.3),
+      0 0 14px rgba(122, 187, 247, 0.2);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(230, 245, 255, 0.24),
+      0 11px 20px rgba(9, 20, 40, 0.36),
+      0 0 21px rgba(122, 187, 247, 0.34);
+  }
+}
+
+@keyframes insight-glow-risk {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 236, 228, 0.2),
+      0 10px 18px rgba(34, 14, 11, 0.31),
+      0 0 14px rgba(255, 167, 142, 0.2);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 236, 228, 0.24),
+      0 11px 20px rgba(34, 14, 11, 0.38),
+      0 0 21px rgba(255, 167, 142, 0.32);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .insight-item,
+  .insight-icon-wrap,
+  .insight-item:hover .insight-icon-wrap,
+  .insight-item:focus-within .insight-icon-wrap {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+.insight-title {
+  font-family: 'Sora', 'Manrope', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e8f2ff;
+  margin-bottom: 4px;
+}
+
+.insight-text {
+  font-size: 0.87rem;
+  line-height: 1.38;
+  color: #ccdbef;
+}
+
+.insight-col:nth-child(1) .insight-item {
+  animation-delay: 40ms;
+}
+
+.insight-col:nth-child(2) .insight-item {
+  animation-delay: 160ms;
+}
+
+.insight-col:nth-child(3) .insight-item {
+  animation-delay: 280ms;
+}
+
+@keyframes insight-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .summary-eyebrow {
   font-size: 0.75rem;
   font-weight: 700;
@@ -861,6 +1267,16 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
   .summary-meta {
     width: 100%;
     text-align: left;
+  }
+
+  .insight-item {
+    min-height: 0;
+  }
+
+  .insight-icon-wrap {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
   }
 
   .kpi-value {
