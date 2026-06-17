@@ -1,10 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap');
 
-:root {
-  --page-bg: #070d1a;
-  --page-text: #dce8ff;
-}
-
 *,
 *::before,
 *::after {
@@ -15,8 +10,6 @@
 
 body {
   min-height: 100vh;
-  color: var(--page-text);
-  background: var(--page-bg);
   line-height: 1.6;
   font-family: 'Manrope', 'Avenir Next', 'Segoe UI', sans-serif;
   font-size: 15px;

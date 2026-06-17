@@ -22,6 +22,26 @@ type ExceptionItem = {
   etaHours: number
 }
 
+import StatusPill from '@/components/StatusPill.vue'
+import type { PillType } from '@/components/StatusPill.vue'
+
+const regionHeaders = [
+  { title: 'Region', key: 'region', sortable: false },
+  { title: 'Shipments', key: 'shipments', sortable: false },
+  { title: 'On-Time %', key: 'onTimeRate', sortable: false },
+  { title: 'Avg Delay (hrs)', key: 'avgDelayHours', sortable: false },
+  { title: 'Open Exceptions', key: 'openExceptions', sortable: false },
+  { title: 'Status', key: 'status', sortable: false },
+]
+
+function regionPillType(status: RegionPerformance['status']): PillType {
+  return status.toLowerCase() as PillType
+}
+
+function priorityPillType(priority: ExceptionItem['priority']): PillType {
+  return priority.toLowerCase() as PillType
+}
+
 const shipmentTrend: ShipmentSnapshot[] = [
   { week: 'W1', volume: 2480, onTimeRate: 93.2 },
   { week: 'W2', volume: 2560, onTimeRate: 93.8 },
@@ -106,100 +126,133 @@ const onTimeDelta = Number((latestOnTimeRate - previousOnTimeRate).toFixed(1))
 </script>
 
 <template>
-  <main class="dashboard">
-    <section class="hero card stagger-1">
-      <div>
-        <p class="eyebrow">FastForward Logistics</p>
-        <h1>Internal Operations Dashboard</h1>
-        <p class="subtitle">
-          Single-source operational visibility for leadership across shipment volume, delivery
-          reliability, regional performance, and active exceptions.
-        </p>
-      </div>
-      <div class="hero-pills">
-        <span class="pill">Live Prototype</span>
-        <span class="pill muted">Updated: 15 min ago</span>
-      </div>
-    </section>
+  <v-container fluid class="dashboard pa-4 pa-md-6">
 
-    <section class="metrics-grid stagger-2" aria-label="Operational KPI summary">
-      <article class="metric card">
-        <p class="metric-label">Shipment Volume (8 Weeks)</p>
-        <p class="metric-value">{{ totalShipments.toLocaleString() }}</p>
-        <p class="metric-trend positive">+8.4% vs prior cycle</p>
-      </article>
+    <!-- Hero Banner -->
+    <v-card class="mb-4 stagger-1" rounded="lg" border>
+      <v-card-text class="pa-5">
+        <v-row align="center" justify="space-between" no-gutters>
+          <v-col>
+            <div class="text-overline text-teal-lighten-1 mb-1">FastForward Logistics</div>
+            <h1 class="text-h4 font-weight-bold mb-2">Internal Operations Dashboard</h1>
+            <p class="text-body-2 text-medium-emphasis">
+              Single-source operational visibility for leadership across shipment volume, delivery
+              reliability, regional performance, and active exceptions.
+            </p>
+          </v-col>
+          <v-col cols="auto" class="mt-3 mt-sm-0 d-flex gap-2">
+            <StatusPill type="info" text="Live Prototype" class="font-weight-bold" />
+            <StatusPill type="neutral" text="Updated: 15 min ago" :show-icon="false" />
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
 
-      <article class="metric card">
-        <p class="metric-label">On-Time Delivery</p>
-        <p class="metric-value">{{ latestOnTimeRate.toFixed(1) }}%</p>
-        <p class="metric-trend" :class="onTimeDelta >= 0 ? 'positive' : 'negative'">
-          {{ onTimeDelta >= 0 ? '+' : '' }}{{ onTimeDelta.toFixed(1) }} pts vs last week
-        </p>
-      </article>
+    <!-- KPI Cards -->
+    <v-row class="mb-4 stagger-2">
+      <v-col cols="12" sm="6" lg="3">
+        <v-card rounded="lg" border height="100%">
+          <v-card-text class="pa-4">
+            <div class="text-overline text-medium-emphasis mb-1">Shipment Volume (8 Weeks)</div>
+            <div class="text-h4 font-weight-bold mb-2">{{ totalShipments.toLocaleString() }}</div>
+            <StatusPill type="positive" text="+8.4% vs prior cycle" />
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <article class="metric card">
-        <p class="metric-label">Regional Health</p>
-        <p class="metric-value">2 Strong / 2 Watch+Risk</p>
-        <p class="metric-trend neutral">Southeast requires intervention</p>
-      </article>
+      <v-col cols="12" sm="6" lg="3">
+        <v-card rounded="lg" border height="100%">
+          <v-card-text class="pa-4">
+            <div class="text-overline text-medium-emphasis mb-1">On-Time Delivery</div>
+            <div class="text-h4 font-weight-bold mb-2">{{ latestOnTimeRate.toFixed(1) }}%</div>
+            <StatusPill
+              :type="onTimeDelta >= 0 ? 'positive' : 'negative'"
+              :text="`${onTimeDelta >= 0 ? '+' : ''}${onTimeDelta.toFixed(1)} pts vs last week`"
+            />
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <article class="metric card">
-        <p class="metric-label">Open Exceptions</p>
-        <p class="metric-value">{{ openExceptions.length }}</p>
-        <p class="metric-trend negative">1 critical, 2 high priority</p>
-      </article>
-    </section>
+      <v-col cols="12" sm="6" lg="3">
+        <v-card rounded="lg" border height="100%">
+          <v-card-text class="pa-4">
+            <div class="text-overline text-medium-emphasis mb-1">Regional Health</div>
+            <div class="text-h4 font-weight-bold mb-2">2 Strong / 2 Watch+Risk</div>
+            <StatusPill type="warning" text="Southeast requires intervention" />
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-    <section class="layout-row stagger-3">
-      <article class="card panel">
-        <div class="panel-header">
-          <h2>Shipment Volume Overview</h2>
-          <p>Weekly throughput and on-time context</p>
-        </div>
-        <div class="volume-grid" role="img" aria-label="Shipment volume by week">
-          <div v-for="week in shipmentTrend" :key="week.week" class="bar-wrap">
-            <div class="bar" :style="{ height: `${(week.volume / 3200) * 100}%` }" />
-            <p class="bar-week">{{ week.week }}</p>
-            <p class="bar-value">{{ week.volume }}</p>
-          </div>
-        </div>
-      </article>
+      <v-col cols="12" sm="6" lg="3">
+        <v-card rounded="lg" border height="100%">
+          <v-card-text class="pa-4">
+            <div class="text-overline text-medium-emphasis mb-1">Open Exceptions</div>
+            <div class="text-h4 font-weight-bold mb-2">{{ openExceptions.length }}</div>
+            <StatusPill type="critical" text="1 critical, 2 high priority" />
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
-      <article class="card panel">
-        <div class="panel-header">
-          <h2>On-Time Delivery Performance</h2>
-          <p>Performance consistency over the same period</p>
-        </div>
-        <ul class="performance-list">
-          <li v-for="week in shipmentTrend" :key="`${week.week}-rate`">
-            <div class="rate-label">
-              <span>{{ week.week }}</span>
-              <strong>{{ week.onTimeRate.toFixed(1) }}%</strong>
+    <!-- Shipment Volume + On-Time Delivery -->
+    <v-row class="mb-4 stagger-3">
+      <v-col cols="12" md="6">
+        <v-card rounded="lg" border height="100%">
+          <v-card-item>
+            <v-card-title class="text-subtitle-1 font-weight-bold">Shipment Volume Overview</v-card-title>
+            <v-card-subtitle>Weekly throughput and on-time context</v-card-subtitle>
+          </v-card-item>
+          <v-card-text class="pt-2">
+            <div class="volume-grid" role="img" aria-label="Shipment volume by week">
+              <div v-for="week in shipmentTrend" :key="week.week" class="bar-wrap">
+                <div class="bar" :style="{ height: `${(week.volume / 3200) * 100}%` }" />
+                <div class="bar-week">{{ week.week }}</div>
+                <div class="bar-value">{{ week.volume }}</div>
+              </div>
             </div>
-            <div class="progress-track">
-              <div class="progress-fill" :style="{ width: `${week.onTimeRate}%` }" />
-            </div>
-          </li>
-        </ul>
-      </article>
-    </section>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-    <section class="layout-row stagger-4">
-      <article class="card panel wide">
-        <div class="panel-header">
-          <h2>Regional Performance</h2>
-          <p>Shipment load, reliability, delay trends, and risk status</p>
-        </div>
-        <div class="table-wrap">
-          <table>
+      <v-col cols="12" md="6">
+        <v-card rounded="lg" border height="100%">
+          <v-card-item>
+            <v-card-title class="text-subtitle-1 font-weight-bold">On-Time Delivery Performance</v-card-title>
+            <v-card-subtitle>Performance consistency over the same period</v-card-subtitle>
+          </v-card-item>
+          <v-card-text class="pt-2">
+            <div v-for="week in shipmentTrend" :key="`${week.week}-rate`" class="mb-4">
+              <div class="d-flex justify-space-between mb-1">
+                <span class="text-caption text-medium-emphasis">{{ week.week }}</span>
+                <span class="text-caption font-weight-bold">{{ week.onTimeRate.toFixed(1) }}%</span>
+              </div>
+              <v-progress-linear
+                :model-value="week.onTimeRate"
+                bg-color="blue-grey-darken-3"
+                color="teal"
+                rounded
+                height="8"
+              />
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Regional Performance + Open Exceptions -->
+    <v-row class="stagger-4">
+      <v-col cols="12" md="7">
+        <v-card rounded="lg" border>
+          <v-card-item>
+            <v-card-title class="text-subtitle-1 font-weight-bold">Regional Performance</v-card-title>
+            <v-card-subtitle>Shipment load, reliability, delay trends, and risk status</v-card-subtitle>
+          </v-card-item>
+          <v-table density="comfortable">
             <thead>
               <tr>
-                <th>Region</th>
-                <th>Shipments</th>
-                <th>On-Time %</th>
-                <th>Avg Delay (hrs)</th>
-                <th>Open Exceptions</th>
-                <th>Status</th>
+                <th v-for="h in regionHeaders" :key="h.key" class="text-left text-overline text-medium-emphasis">
+                  {{ h.title }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -210,388 +263,95 @@ const onTimeDelta = Number((latestOnTimeRate - previousOnTimeRate).toFixed(1))
                 <td>{{ region.avgDelayHours.toFixed(1) }}</td>
                 <td>{{ region.openExceptions }}</td>
                 <td>
-                  <span class="status" :class="region.status.toLowerCase()">{{ region.status }}</span>
+                  <StatusPill :type="regionPillType(region.status)" :text="region.status" shape="label" />
                 </td>
               </tr>
             </tbody>
-          </table>
-        </div>
-      </article>
+          </v-table>
+        </v-card>
+      </v-col>
 
-      <article class="card panel">
-        <div class="panel-header">
-          <h2>Open Exceptions</h2>
-          <p>Priority queue for immediate operational action</p>
-        </div>
-        <ul class="exceptions-list">
-          <li v-for="item in openExceptions" :key="item.id">
-            <div>
-              <p class="exception-id">{{ item.id }}</p>
-              <p class="exception-issue">{{ item.issue }}</p>
-              <p class="exception-owner">{{ item.owner }}</p>
-            </div>
-            <div class="exception-meta">
-              <span class="priority" :class="item.priority.toLowerCase()">{{ item.priority }}</span>
-              <span class="eta">ETA {{ item.etaHours }}h</span>
-            </div>
-          </li>
-        </ul>
-      </article>
-    </section>
-  </main>
+      <v-col cols="12" md="5">
+        <v-card rounded="lg" border height="100%">
+          <v-card-item>
+            <v-card-title class="text-subtitle-1 font-weight-bold">Open Exceptions</v-card-title>
+            <v-card-subtitle>Priority queue for immediate operational action</v-card-subtitle>
+          </v-card-item>
+          <v-list lines="three" bg-color="transparent">
+            <v-list-item
+              v-for="item in openExceptions"
+              :key="item.id"
+              class="mb-1"
+              rounded="lg"
+            >
+              <template #prepend>
+                <v-icon :style="{ color: item.priority === 'Critical' ? '#ffc5bf' : item.priority === 'High' ? '#ffd8a8' : '#a8d4ff' }" class="mt-1">mdi-alert-circle-outline</v-icon>
+              </template>
+              <template #title>
+                <span class="text-caption text-medium-emphasis">{{ item.id }}</span>
+              </template>
+              <template #subtitle>
+                <span class="text-wrap">{{ item.issue }}</span>
+                <div class="text-caption text-medium-emphasis mt-1">{{ item.owner }}</div>
+              </template>
+              <template #append>
+                <div class="d-flex flex-column align-end ga-1 ml-3">
+                  <StatusPill :type="priorityPillType(item.priority)" :text="item.priority" shape="label" size="x-small" />
+                  <span class="text-caption text-medium-emphasis text-no-wrap">ETA {{ item.etaHours }}h</span>
+                </div>
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-col>
+    </v-row>
+
+  </v-container>
 </template>
 
 <style scoped>
 .dashboard {
   min-height: 100vh;
-  padding: 2rem clamp(1rem, 3vw, 2.5rem) 3rem;
   background:
-    radial-gradient(circle at 10% 12%, rgba(20, 177, 157, 0.26), transparent 36%),
-    radial-gradient(circle at 84% 2%, rgba(255, 132, 77, 0.22), transparent 33%),
-    linear-gradient(135deg, #050b17 0%, #0a1222 48%, #0d1730 100%);
-}
-
-.dashboard::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: linear-gradient(rgba(132, 167, 236, 0.09) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(132, 167, 236, 0.09) 1px, transparent 1px);
-  background-size: 28px 28px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.dashboard > * {
-  position: relative;
-  z-index: 1;
-}
-
-.card {
-  background: linear-gradient(160deg, rgba(17, 28, 50, 0.88), rgba(11, 20, 40, 0.9));
-  border: 1px solid rgba(123, 161, 233, 0.24);
-  border-radius: 1.1rem;
-  box-shadow: 0 24px 60px rgba(2, 7, 20, 0.6);
-  backdrop-filter: blur(4px);
-}
-
-.hero {
-  padding: clamp(1.2rem, 2.4vw, 1.8rem);
-  display: flex;
-  justify-content: space-between;
-  gap: 1.2rem;
-  align-items: start;
-  margin-bottom: 1.1rem;
-}
-
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: #5de5c9;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-h1 {
-  font-family: 'Sora', 'Avenir Next', 'Segoe UI', sans-serif;
-  font-weight: 700;
-  color: #ecf4ff;
-  font-size: clamp(1.5rem, 4vw, 2.3rem);
-  margin-top: 0.4rem;
-}
-
-.subtitle {
-  margin-top: 0.65rem;
-  max-width: 65ch;
-  color: #a5bce6;
-  line-height: 1.5;
-}
-
-.hero-pills {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.pill {
-  border: 1px solid #2eceb4;
-  color: #b8ffee;
-  background: rgba(22, 98, 92, 0.35);
-  border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-
-.pill.muted {
-  border-color: #5679ad;
-  color: #b8cdee;
-  background: rgba(45, 69, 106, 0.36);
-}
-
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-bottom: 1.1rem;
-}
-
-.metric {
-  padding: 1rem;
-}
-
-.metric-label {
-  color: #86a3d6;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-}
-
-.metric-value {
-  margin-top: 0.45rem;
-  color: #f2f7ff;
-  font-size: clamp(1.2rem, 3.4vw, 1.85rem);
-  font-family: 'Sora', 'Avenir Next', 'Segoe UI', sans-serif;
-  font-weight: 700;
-}
-
-.metric-trend {
-  margin-top: 0.4rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.positive {
-  color: #4ce0a8;
-}
-
-.negative {
-  color: #ff8f79;
-}
-
-.neutral {
-  color: #86add8;
-}
-
-.layout-row {
-  display: grid;
-  gap: 0.95rem;
-  margin-bottom: 1.1rem;
-  grid-template-columns: 1fr 1fr;
-}
-
-.panel {
-  padding: 1rem;
-}
-
-.wide {
-  grid-column: span 1;
-}
-
-.panel-header h2 {
-  color: #e8f1ff;
-  font-size: 1.02rem;
-  font-family: 'Sora', 'Avenir Next', 'Segoe UI', sans-serif;
-  font-weight: 700;
-}
-
-.panel-header p {
-  color: #8aa8d3;
-  font-size: 0.82rem;
-  margin-top: 0.3rem;
+    radial-gradient(circle at 10% 12%, rgba(20, 177, 157, 0.14), transparent 36%),
+    radial-gradient(circle at 84% 2%, rgba(255, 132, 77, 0.10), transparent 33%);
 }
 
 .volume-grid {
-  margin-top: 0.95rem;
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   align-items: end;
   gap: 0.6rem;
-  min-height: 220px;
+  min-height: 200px;
   padding-top: 0.4rem;
 }
 
 .bar-wrap {
   display: flex;
   flex-direction: column;
-  justify-content: end;
+  justify-content: flex-end;
   align-items: center;
   height: 100%;
 }
 
 .bar {
   width: 100%;
-  border-radius: 0.55rem 0.55rem 0.35rem 0.35rem;
+  border-radius: 0.45rem 0.45rem 0.25rem 0.25rem;
   background: linear-gradient(180deg, #1cc5a2 0%, #0f8f86 100%);
-  box-shadow: 0 8px 24px rgba(10, 179, 153, 0.34);
+  box-shadow: 0 6px 18px rgba(10, 179, 153, 0.3);
   animation: grow 850ms ease both;
 }
 
 .bar-week {
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: #9eb8e2;
+  margin-top: 0.45rem;
+  font-size: 0.72rem;
+  opacity: 0.7;
   font-weight: 700;
 }
 
 .bar-value {
-  font-size: 0.72rem;
-  color: #7f9ac0;
-}
-
-.performance-list {
-  margin-top: 0.9rem;
-  list-style: none;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.rate-label {
-  display: flex;
-  justify-content: space-between;
-  color: #9eb6dd;
-  font-size: 0.82rem;
-  margin-bottom: 0.24rem;
-}
-
-.rate-label strong {
-  color: #f3f8ff;
-}
-
-.progress-track {
-  height: 0.62rem;
-  border-radius: 999px;
-  background: #1d304f;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #16c399, #33e7b8);
-  border-radius: inherit;
-  animation: fill 1.1s ease both;
-}
-
-.table-wrap {
-  margin-top: 0.85rem;
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.84rem;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 0.58rem 0.45rem;
-  border-bottom: 1px solid rgba(125, 161, 223, 0.22);
-}
-
-th {
-  color: #89a5ce;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.69rem;
-}
-
-td {
-  color: #d7e6ff;
-}
-
-.status {
-  border-radius: 999px;
-  padding: 0.18rem 0.52rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.status.strong {
-  color: #58f0c8;
-  background: rgba(36, 130, 109, 0.28);
-}
-
-.status.watch {
-  color: #ffd383;
-  background: rgba(148, 102, 19, 0.3);
-}
-
-.status.risk {
-  color: #ff8f84;
-  background: rgba(159, 64, 54, 0.3);
-}
-
-.exceptions-list {
-  margin-top: 0.85rem;
-  list-style: none;
-  display: grid;
-  gap: 0.7rem;
-}
-
-.exceptions-list li {
-  border: 1px solid rgba(109, 150, 219, 0.28);
-  border-radius: 0.75rem;
-  background: rgba(17, 30, 55, 0.78);
-  padding: 0.75rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.exception-id {
-  color: #88a4ce;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.exception-issue {
-  margin-top: 0.25rem;
-  color: #e6f0ff;
-  line-height: 1.35;
-  font-size: 0.84rem;
-}
-
-.exception-owner {
-  margin-top: 0.25rem;
-  color: #98b1d5;
-  font-size: 0.75rem;
-}
-
-.exception-meta {
-  display: grid;
-  gap: 0.36rem;
-  align-content: start;
-  justify-items: end;
-}
-
-.priority {
-  font-size: 0.69rem;
-  padding: 0.2rem 0.45rem;
-  border-radius: 999px;
-  font-weight: 700;
-}
-
-.priority.critical {
-  color: #ffc0b7;
-  background: rgba(138, 47, 42, 0.34);
-}
-
-.priority.high {
-  color: #ffd69a;
-  background: rgba(132, 89, 16, 0.34);
-}
-
-.priority.medium {
-  color: #9fd0ff;
-  background: rgba(42, 85, 130, 0.34);
-}
-
-.eta {
-  color: #8ba9d4;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
+  opacity: 0.5;
 }
 
 .stagger-1,
@@ -599,71 +359,19 @@ td {
 .stagger-3,
 .stagger-4 {
   opacity: 0;
-  transform: translateY(12px);
-  animation: rise 650ms ease forwards;
+  transform: translateY(10px);
+  animation: rise 600ms ease forwards;
 }
 
-.stagger-2 {
-  animation-delay: 130ms;
-}
-
-.stagger-3 {
-  animation-delay: 260ms;
-}
-
-.stagger-4 {
-  animation-delay: 390ms;
-}
+.stagger-2 { animation-delay: 120ms; }
+.stagger-3 { animation-delay: 240ms; }
+.stagger-4 { animation-delay: 360ms; }
 
 @keyframes rise {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes grow {
-  from {
-    height: 0;
-  }
-}
-
-@keyframes fill {
-  from {
-    width: 0;
-  }
-}
-
-@media (max-width: 1180px) {
-  .metrics-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .layout-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .hero {
-    flex-direction: column;
-  }
-
-  .metrics-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .volume-grid {
-    min-height: 180px;
-    gap: 0.45rem;
-  }
-
-  .exceptions-list li {
-    flex-direction: column;
-  }
-
-  .exception-meta {
-    justify-items: start;
-  }
+  from { height: 0; }
 }
 </style>

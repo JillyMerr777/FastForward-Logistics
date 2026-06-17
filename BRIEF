@@ -1,0 +1,101 @@
+# FastForward Logistics - Unified Project Brief
+
+This file is the single source of truth for project brief, setup plan, and developer documentation.
+
+## Source Consolidation
+
+This unified brief combines the prior content from:
+- Brief.md
+- Plan.md
+- README.md
+
+---
+
+## Project Brief: FastForward Logistics Internal Operations Dashboard
+
+### Project Overview
+FastForward Logistics is a mid-size freight and supply chain company that currently relies on spreadsheets to monitor operational performance. As the business has grown, this approach has become inefficient, fragmented, and difficult to use in leadership settings.
+
+The VP of Operations needs a centralized internal dashboard that provides a clear view of key operational metrics such as shipment volume, on-time delivery rates, regional performance, and open exceptions. This project will deliver a working front-end prototype of that dashboard as if it were part of a real client engagement.
+
+### Project Goal
+Design and build a modern internal dashboard prototype that gives leadership a simple, effective way to understand business performance at a glance. The experience should feel polished, credible, and presentation-ready while demonstrating strong frontend fundamentals, thoughtful UX design, and a clean project setup.
+
+Design direction should prioritize a dark mode visual experience suitable for internal operations use in leadership presentations.
+
+### Problem Statement
+Operational data is fragmented across spreadsheets, making it difficult to:
+- quickly assess performance
+- identify trends or risks
+- communicate updates in leadership meetings
+
+A centralized dashboard is needed to provide a single source of truth.
+
+### Users
+Primary user:
+- VP of Operations
+
+Secondary users:
+- Operations managers
+- Regional leads
+- Analysts reviewing shipment and delivery performance
+
+### Functional Requirements
+The dashboard should include:
+- shipment volume overview
+- on-time delivery performance metrics
+
+---
+
+## Implementation Plan (Original Plan.md Content)
+
+Create a new Vue project. Use the create-vue scaffolding tool with Vite.
+
+Enable:
+- TypeScript
+- Vue Router
+
+Disable:
+- Pinia
+- Testing
+- JSX
+- ESLint
+- Prettier
+
+Run required setup commands in terminal.
+
+---
+
+## Developer README (Original README.md Content)
+
+### Recommended IDE Setup
+[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+
+### Recommended Browser Setup
+- Chromium-based browsers (Chrome, Edge, Brave, etc.):
+  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
+  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
+- Firefox:
+  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
+  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+
+### Type Support for .vue Imports in TS
+TypeScript cannot handle type information for .vue imports by default, so replace the tsc CLI with vue-tsc for type checking. In editors, use Volar to make the TypeScript language service aware of .vue types.
+
+### Customize Configuration
+See [Vite Configuration Reference](https://vite.dev/config/).
+
+### Project Setup
+```sh
+npm install
+```
+
+### Compile and Hot-Reload for Development
+```sh
+npm run dev
+```
+
+### Type-Check, Compile and Minify for Production
+```sh
+npm run build
+```
