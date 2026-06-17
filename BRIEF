@@ -161,6 +161,9 @@ Charts must:
 
 Use a **local JSON dataset only** (no API calls).
 
+Source of truth data file:
+- `src/data/metrics.json`
+
 Dataset must include:
 - 12 months of data (Jan–Dec 2025)
 
@@ -170,9 +173,28 @@ Each month should include:
 - On-time delivery rate (%)  
 - Orders or exceptions  
 
+Data realism guidance:
+- Revenue should mostly stay in the **$40K-$80K** range with month-to-month variation
+- Include realistic seasonality (e.g., softer early Q1, stronger late summer or holiday periods)
+- Avoid perfectly linear trends; include mild dips and rebounds
+
 Data must support:
 - Monthly filtering  
 - “All” aggregation (totals or averages)  
+
+Recommended schema for each monthly record:
+
+```json
+{
+  "month": "2025-01",
+  "label": "Jan",
+  "revenue": 45250,
+  "shipmentVolume": 980,
+  "onTimeDeliveryRate": 93.4,
+  "orders": 910,
+  "exceptions": 37
+}
+```
 
 ---
 
@@ -193,3 +215,6 @@ Create project using Vite:
 
 ```sh
 npm create vue@latest
+```
+
+Use the existing project scaffold in this repository and implement the dashboard as a single-page Vue 3 + TypeScript app with Vuetify and Chart.js.

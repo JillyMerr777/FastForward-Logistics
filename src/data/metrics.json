@@ -1,0 +1,110 @@
+[
+  {
+    "month": "2025-01",
+    "label": "Jan",
+    "revenue": 44280,
+    "shipmentVolume": 940,
+    "onTimeDeliveryRate": 92.8,
+    "orders": 890,
+    "exceptions": 43
+  },
+  {
+    "month": "2025-02",
+    "label": "Feb",
+    "revenue": 46890,
+    "shipmentVolume": 980,
+    "onTimeDeliveryRate": 93.1,
+    "orders": 925,
+    "exceptions": 41
+  },
+  {
+    "month": "2025-03",
+    "label": "Mar",
+    "revenue": 50240,
+    "shipmentVolume": 1045,
+    "onTimeDeliveryRate": 94.0,
+    "orders": 990,
+    "exceptions": 36
+  },
+  {
+    "month": "2025-04",
+    "label": "Apr",
+    "revenue": 48760,
+    "shipmentVolume": 1010,
+    "onTimeDeliveryRate": 93.5,
+    "orders": 965,
+    "exceptions": 39
+  },
+  {
+    "month": "2025-05",
+    "label": "May",
+    "revenue": 53810,
+    "shipmentVolume": 1120,
+    "onTimeDeliveryRate": 94.4,
+    "orders": 1050,
+    "exceptions": 34
+  },
+  {
+    "month": "2025-06",
+    "label": "Jun",
+    "revenue": 57190,
+    "shipmentVolume": 1195,
+    "onTimeDeliveryRate": 95.0,
+    "orders": 1115,
+    "exceptions": 31
+  },
+  {
+    "month": "2025-07",
+    "label": "Jul",
+    "revenue": 60840,
+    "shipmentVolume": 1260,
+    "onTimeDeliveryRate": 95.4,
+    "orders": 1180,
+    "exceptions": 29
+  },
+  {
+    "month": "2025-08",
+    "label": "Aug",
+    "revenue": 63120,
+    "shipmentVolume": 1315,
+    "onTimeDeliveryRate": 95.1,
+    "orders": 1230,
+    "exceptions": 30
+  },
+  {
+    "month": "2025-09",
+    "label": "Sep",
+    "revenue": 59240,
+    "shipmentVolume": 1240,
+    "onTimeDeliveryRate": 94.6,
+    "orders": 1160,
+    "exceptions": 33
+  },
+  {
+    "month": "2025-10",
+    "label": "Oct",
+    "revenue": 66780,
+    "shipmentVolume": 1385,
+    "onTimeDeliveryRate": 95.7,
+    "orders": 1295,
+    "exceptions": 27
+  },
+  {
+    "month": "2025-11",
+    "label": "Nov",
+    "revenue": 72410,
+    "shipmentVolume": 1480,
+    "onTimeDeliveryRate": 96.1,
+    "orders": 1370,
+    "exceptions": 24
+  },
+  {
+    "month": "2025-12",
+    "label": "Dec",
+    "revenue": 78260,
+    "shipmentVolume": 1560,
+    "onTimeDeliveryRate": 94.9,
+    "orders": 1455,
+    "exceptions": 35
+  }
+]
