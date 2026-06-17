@@ -2,100 +2,194 @@
 
 This file is the single source of truth for project brief, setup plan, and developer documentation.
 
-## Source Consolidation
+---
 
-This unified brief combines the prior content from:
-- Brief.md
-- Plan.md
-- README.md
+## Project: FastForward Logistics Internal Operations Dashboard
+
+### Overview
+FastForward Logistics is a mid-size freight and supply chain company that currently relies on spreadsheets to monitor operational performance. As the business has scaled, this approach has become inefficient, fragmented, and difficult to present in leadership settings.
+
+This project delivers a **front-end dashboard prototype** that centralizes operational data into a clean, modern, and presentation-ready experience.
 
 ---
 
-## Project Brief: FastForward Logistics Internal Operations Dashboard
+## Goal
+Design and build a **single-page internal dashboard** that enables leadership to quickly understand business performance.
 
-### Project Overview
-FastForward Logistics is a mid-size freight and supply chain company that currently relies on spreadsheets to monitor operational performance. As the business has grown, this approach has become inefficient, fragmented, and difficult to use in leadership settings.
+The solution should:
+- Present key metrics clearly and efficiently
+- Support fast insights during leadership reviews
+- Demonstrate strong frontend fundamentals and UX thinking
+- Be polished enough for presentation use
 
-The VP of Operations needs a centralized internal dashboard that provides a clear view of key operational metrics such as shipment volume, on-time delivery rates, regional performance, and open exceptions. This project will deliver a working front-end prototype of that dashboard as if it were part of a real client engagement.
+The experience should prioritize a **dark-mode, executive-friendly design**.
 
-### Project Goal
-Design and build a modern internal dashboard prototype that gives leadership a simple, effective way to understand business performance at a glance. The experience should feel polished, credible, and presentation-ready while demonstrating strong frontend fundamentals, thoughtful UX design, and a clean project setup.
+---
 
-Design direction should prioritize a dark mode visual experience suitable for internal operations use in leadership presentations.
+## Problem Statement
+Current operational data is spread across spreadsheets, making it difficult to:
+- Quickly assess business performance
+- Identify trends or risks
+- Communicate updates clearly in meetings
 
-### Problem Statement
-Operational data is fragmented across spreadsheets, making it difficult to:
-- quickly assess performance
-- identify trends or risks
-- communicate updates in leadership meetings
+A centralized dashboard is needed to provide a **single source of truth**.
 
-A centralized dashboard is needed to provide a single source of truth.
+---
 
-### Users
-Primary user:
+## Users
+**Primary User**
 - VP of Operations
 
-Secondary users:
-- Operations managers
-- Regional leads
-- Analysts reviewing shipment and delivery performance
-
-### Functional Requirements
-The dashboard should include:
-- shipment volume overview
-- on-time delivery performance metrics
+**Secondary Users**
+- Operations managers  
+- Regional leads  
+- Analysts monitoring performance  
 
 ---
 
-## Implementation Plan (Original Plan.md Content)
-
-Create a new Vue project. Use the create-vue scaffolding tool with Vite.
-
-Enable:
-- TypeScript
-- Vue Router
-
-Disable:
-- Pinia
-- Testing
-- JSX
-- ESLint
-- Prettier
-
-Run required setup commands in terminal.
+## Functional Requirements
+The dashboard must include:
+- Shipment volume or revenue overview  
+- On-time delivery performance  
+- Additional operational metric (orders, exceptions, etc.)
 
 ---
 
-## Developer README (Original README.md Content)
+## Visual & UX Requirements
 
-### Recommended IDE Setup
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+### Design Style
+- Use **Vuetify dark theme by default**
+- Clean, minimal, and uncluttered layout
+- Strong hierarchy for quick executive scanning
+- Consistent and restrained color palette (no rainbow charts)
+- Presentation-ready visual polish
+- Maintain consistent left/right page gutters between app bar and content at all breakpoints
 
-### Recommended Browser Setup
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+---
 
-### Type Support for .vue Imports in TS
-TypeScript cannot handle type information for .vue imports by default, so replace the tsc CLI with vue-tsc for type checking. In editors, use Volar to make the TypeScript language service aware of .vue types.
+### Layout Structure (Vuetify)
 
-### Customize Configuration
-See [Vite Configuration Reference](https://vite.dev/config/).
+Use `v-app`, `v-app-bar`, `v-container`, `v-row`, and `v-col`.
 
-### Project Setup
+#### 1. App Bar
+- Title: **FastForward Logistics**
+- Global **month filter (dropdown or select)**
+- Filter defaults to **"All"**
+
+---
+
+#### 2. Summary KPI Cards
+Display **4 cards in a row (desktop)**:
+- Revenue / Shipment Value  
+- Shipment Volume  
+- On-Time Delivery Rate  
+- Orders / Exceptions  
+
+Each card must include:
+- Metric label  
+- Large primary value  
+- Change vs previous month  
+- Up/down arrow indicator  
+- Color + icon (not color-only)
+
+---
+
+#### 3. Charts Layout
+
+**Row 1**
+- Left: **Bar chart** (monthly metric, e.g., revenue or shipments)  
+- Right: **Line chart** (trend over time)
+
+**Row 2**
+- Full-width **line or area chart** (performance trend such as delivery rate)
+
+---
+
+## Interaction Behavior
+
+### Global Month Filter
+Controls all dashboard data.
+
+**When a specific month is selected:**
+- Cards update to that month’s values  
+- Charts highlight or focus on that month  
+
+**When "All" is selected:**
+- Cards show yearly totals or averages  
+- Charts display full 12-month trends  
+
+---
+
+### KPI Trend Indicators
+Each summary card should:
+- Compare against the **previous month**
+- Show:
+  - Up arrow for increase  
+  - Down arrow for decrease  
+- Include visual + textual reinforcement (not color alone)
+
+---
+
+### Charts Behavior
+Charts must:
+- Use `chart.js` with `vue-chartjs`  
+- Include tooltips on hover  
+- Smoothly update when filter changes  
+- Maintain readable axes and labels  
+- Be visually consistent with dark theme  
+
+---
+
+## Responsive Requirements
+- Mobile-first layout  
+- Cards stack vertically on small screens  
+- Charts resize fluidly  
+- Maintain readability at all sizes  
+
+---
+
+## Accessibility Requirements
+- Sufficient contrast in dark mode  
+- Do not rely on color alone  
+- Use icons + labels for meaning  
+- Ensure readable typography and spacing  
+- Ensure filter is keyboard accessible  
+
+---
+
+## Data Requirements
+
+Use a **local JSON dataset only** (no API calls).
+
+Dataset must include:
+- 12 months of data (Jan–Dec 2025)
+
+Each month should include:
+- Revenue / shipment value (upward trend)  
+- Shipment volume (with possible seasonality)  
+- On-time delivery rate (%)  
+- Orders or exceptions  
+
+Data must support:
+- Monthly filtering  
+- “All” aggregation (totals or averages)  
+
+---
+
+## Technical Requirements
+
+- Vue 3 + TypeScript  
+- Vuetify 3 for UI components  
+- Material Design Icons  
+- Chart.js + vue-chartjs  
+- Local JSON data (no backend)  
+- Single-page application  
+
+---
+
+## Implementation Plan
+
+Create project using Vite:
+
 ```sh
-npm install
-```
-
-### Compile and Hot-Reload for Development
-```sh
-npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-```sh
-npm run build
-```
+npm create vue@latest

@@ -1,377 +1,634 @@
 <script setup lang="ts">
-type ShipmentSnapshot = {
-  week: string
-  volume: number
+import { computed, ref } from 'vue'
+import { Bar, Line } from 'vue-chartjs'
+import {
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Title,
+  Tooltip,
+  type ChartData,
+  type ChartOptions,
+} from 'chart.js'
+
+import logo from '@/assets/Logo.png'
+import favicon from '@/assets/Favicon.png'
+import operationsData from '@/assets/operations-data.json'
+
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Filler,
+)
+
+type MonthRecord = {
+  month: string
+  revenue: number
+  shipmentVolume: number
   onTimeRate: number
+  orders: number
+  exceptions: number
 }
 
-type RegionPerformance = {
-  region: string
-  shipments: number
-  onTimeRate: number
-  avgDelayHours: number
-  openExceptions: number
-  status: 'Strong' | 'Watch' | 'Risk'
+type TrendMeta = {
+  text: string
+  icon: string
+  color: 'success' | 'error' | 'medium-emphasis'
 }
 
-type ExceptionItem = {
-  id: string
-  issue: string
-  owner: string
-  priority: 'Critical' | 'High' | 'Medium'
-  etaHours: number
+type KpiCard = {
+  key: string
+  label: string
+  value: string
+  icon: string
+  trend: TrendMeta
+  helper: string
 }
 
-import StatusPill from '@/components/StatusPill.vue'
-import type { PillType } from '@/components/StatusPill.vue'
+const monthlyData = operationsData as MonthRecord[]
+const selectedMonth = ref('All')
+const fallbackRecord: MonthRecord = {
+  month: 'N/A',
+  revenue: 0,
+  shipmentVolume: 0,
+  onTimeRate: 0,
+  orders: 0,
+  exceptions: 0,
+}
 
-const regionHeaders = [
-  { title: 'Region', key: 'region', sortable: false },
-  { title: 'Shipments', key: 'shipments', sortable: false },
-  { title: 'On-Time %', key: 'onTimeRate', sortable: false },
-  { title: 'Avg Delay (hrs)', key: 'avgDelayHours', sortable: false },
-  { title: 'Open Exceptions', key: 'openExceptions', sortable: false },
-  { title: 'Status', key: 'status', sortable: false },
+const monthOptions = [
+  { label: 'All', value: 'All' },
+  ...monthlyData.map((item) => ({ label: item.month, value: item.month })),
 ]
 
-function regionPillType(status: RegionPerformance['status']): PillType {
-  return status.toLowerCase() as PillType
+const selectedIndex = computed(() => monthlyData.findIndex((item) => item.month === selectedMonth.value))
+const selectedRecord = computed(() => monthlyData[selectedIndex.value] ?? null)
+const latestRecord = computed(() => monthlyData[monthlyData.length - 1] ?? fallbackRecord)
+const trendCurrentRecord = computed(() =>
+  selectedMonth.value === 'All' ? latestRecord.value : (selectedRecord.value ?? latestRecord.value),
+)
+
+function previousOf(index: number): MonthRecord | null {
+  if (index <= 0) return null
+  return monthlyData[index - 1] ?? null
 }
 
-function priorityPillType(priority: ExceptionItem['priority']): PillType {
-  return priority.toLowerCase() as PillType
+const comparisonRecord = computed(() => {
+  if (selectedMonth.value === 'All') {
+    return previousOf(monthlyData.length - 1)
+  }
+  return previousOf(selectedIndex.value)
+})
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value)
 }
 
-const shipmentTrend: ShipmentSnapshot[] = [
-  { week: 'W1', volume: 2480, onTimeRate: 93.2 },
-  { week: 'W2', volume: 2560, onTimeRate: 93.8 },
-  { week: 'W3', volume: 2710, onTimeRate: 94.1 },
-  { week: 'W4', volume: 2795, onTimeRate: 94.4 },
-  { week: 'W5', volume: 2850, onTimeRate: 95.1 },
-  { week: 'W6', volume: 2940, onTimeRate: 95.4 },
-  { week: 'W7', volume: 3015, onTimeRate: 95.7 },
-  { week: 'W8', volume: 3120, onTimeRate: 96.1 },
-]
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat('en-US').format(Math.round(value))
+}
 
-const regionalPerformance: RegionPerformance[] = [
-  {
-    region: 'West',
-    shipments: 4210,
-    onTimeRate: 97.2,
-    avgDelayHours: 1.3,
-    openExceptions: 9,
-    status: 'Strong',
-  },
-  {
-    region: 'Central',
-    shipments: 3360,
-    onTimeRate: 95.8,
-    avgDelayHours: 2.1,
-    openExceptions: 14,
-    status: 'Watch',
-  },
-  {
-    region: 'Northeast',
-    shipments: 2860,
-    onTimeRate: 94.9,
-    avgDelayHours: 2.8,
-    openExceptions: 17,
-    status: 'Watch',
-  },
-  {
-    region: 'Southeast',
-    shipments: 2050,
-    onTimeRate: 92.7,
-    avgDelayHours: 3.6,
-    openExceptions: 21,
-    status: 'Risk',
-  },
-]
+function formatPercent(value: number): string {
+  return `${value.toFixed(1)}%`
+}
 
-const openExceptions: ExceptionItem[] = [
-  {
-    id: 'EX-1482',
-    issue: 'Weather reroute impacting Atlanta outbound lanes',
-    owner: 'Regional Lead - Southeast',
-    priority: 'Critical',
-    etaHours: 6,
-  },
-  {
-    id: 'EX-1477',
-    issue: 'Carrier capacity mismatch for Midwest overnight routes',
-    owner: 'Capacity Planning',
-    priority: 'High',
-    etaHours: 12,
-  },
-  {
-    id: 'EX-1459',
-    issue: 'Dock staffing gap causing delayed scans at Newark',
-    owner: 'Terminal Operations',
-    priority: 'High',
-    etaHours: 18,
-  },
-  {
-    id: 'EX-1448',
-    issue: 'Label print errors from legacy handheld devices',
-    owner: 'IT Support',
-    priority: 'Medium',
-    etaHours: 26,
-  },
-]
+const kpiCurrent = computed(() => {
+  if (selectedMonth.value === 'All') {
+    const totals = monthlyData.reduce(
+      (acc, item) => {
+        acc.revenue += item.revenue
+        acc.shipmentVolume += item.shipmentVolume
+        acc.onTimeRate += item.onTimeRate
+        acc.exceptions += item.exceptions
+        return acc
+      },
+      { revenue: 0, shipmentVolume: 0, onTimeRate: 0, exceptions: 0 },
+    )
 
-const totalShipments = shipmentTrend.reduce((sum, week) => sum + week.volume, 0)
-const latestOnTimeRate = shipmentTrend[shipmentTrend.length - 1]?.onTimeRate ?? 0
-const previousOnTimeRate = shipmentTrend[shipmentTrend.length - 2]?.onTimeRate ?? 0
-const onTimeDelta = Number((latestOnTimeRate - previousOnTimeRate).toFixed(1))
+    return {
+      revenue: totals.revenue,
+      shipmentVolume: totals.shipmentVolume,
+      onTimeRate: totals.onTimeRate / monthlyData.length,
+      exceptions: totals.exceptions,
+      scopeLabel: 'All Months',
+    }
+  }
+
+  const item = selectedRecord.value ?? latestRecord.value
+  return {
+    revenue: item.revenue,
+    shipmentVolume: item.shipmentVolume,
+    onTimeRate: item.onTimeRate,
+    exceptions: item.exceptions,
+    scopeLabel: item.month,
+  }
+})
+
+function buildTrend(current: number, previous: number | null | undefined, invert = false): TrendMeta {
+  if (previous == null || previous === 0) {
+    return {
+      text: 'No prior month baseline',
+      icon: 'mdi-minus-thick',
+      color: 'medium-emphasis',
+    }
+  }
+
+  const deltaPct = ((current - previous) / previous) * 100
+  const positive = invert ? deltaPct <= 0 : deltaPct >= 0
+
+  return {
+    text: `${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}% vs previous month`,
+    icon: deltaPct >= 0 ? 'mdi-arrow-up-right' : 'mdi-arrow-down-right',
+    color: positive ? 'success' : 'error',
+  }
+}
+
+const revenueTrend = computed(() => buildTrend(trendCurrentRecord.value.revenue, comparisonRecord.value?.revenue))
+const volumeTrend = computed(() =>
+  buildTrend(trendCurrentRecord.value.shipmentVolume, comparisonRecord.value?.shipmentVolume),
+)
+const onTimeTrend = computed(() =>
+  buildTrend(trendCurrentRecord.value.onTimeRate, comparisonRecord.value?.onTimeRate),
+)
+const exceptionsTrend = computed(() =>
+  buildTrend(trendCurrentRecord.value.exceptions, comparisonRecord.value?.exceptions, true),
+)
+
+const kpiCards = computed<KpiCard[]>(() => [
+  {
+    key: 'revenue',
+    label: 'Revenue / Shipment Value',
+    value: formatCurrency(kpiCurrent.value.revenue),
+    icon: 'mdi-cash-multiple',
+    trend: revenueTrend.value,
+    helper: selectedMonth.value === 'All' ? 'Year total' : 'Selected month value',
+  },
+  {
+    key: 'volume',
+    label: 'Shipment Volume',
+    value: formatNumber(kpiCurrent.value.shipmentVolume),
+    icon: 'mdi-truck-fast-outline',
+    trend: volumeTrend.value,
+    helper: selectedMonth.value === 'All' ? 'Year total' : 'Selected month value',
+  },
+  {
+    key: 'on-time',
+    label: 'On-Time Delivery Rate',
+    value: formatPercent(kpiCurrent.value.onTimeRate),
+    icon: 'mdi-timer-check-outline',
+    trend: onTimeTrend.value,
+    helper: selectedMonth.value === 'All' ? '12-month average' : 'Selected month value',
+  },
+  {
+    key: 'exceptions',
+    label: 'Orders / Exceptions',
+    value: formatNumber(kpiCurrent.value.exceptions),
+    icon: 'mdi-alert-circle-outline',
+    trend: exceptionsTrend.value,
+    helper: selectedMonth.value === 'All' ? 'Year total' : 'Selected month value',
+  },
+])
+
+const labels = computed(() => monthlyData.map((item) => item.month))
+
+function colorByFocus(active: string, muted: string): string[] {
+  if (selectedMonth.value === 'All') {
+    return labels.value.map(() => active)
+  }
+  return labels.value.map((label) => (label === selectedMonth.value ? active : muted))
+}
+
+const barChartOptions: ChartOptions<'bar'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: {
+    duration: 450,
+    easing: 'easeOutQuart',
+  },
+  interaction: {
+    mode: 'index',
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      labels: {
+        color: '#c6d6ed',
+        usePointStyle: true,
+      },
+    },
+    tooltip: {
+      backgroundColor: '#0f1a2f',
+      borderColor: '#325278',
+      borderWidth: 1,
+      titleColor: '#f2f8ff',
+      bodyColor: '#d6e4f8',
+      padding: 10,
+    },
+  },
+  scales: {
+    x: {
+      grid: { color: 'rgba(141, 170, 203, 0.12)' },
+      ticks: { color: '#b9cce8' },
+    },
+    y: {
+      grid: { color: 'rgba(141, 170, 203, 0.16)' },
+      ticks: { color: '#b9cce8' },
+    },
+  },
+}
+
+const lineChartOptions: ChartOptions<'line'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: {
+    duration: 450,
+    easing: 'easeOutQuart',
+  },
+  interaction: {
+    mode: 'index',
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      labels: {
+        color: '#c6d6ed',
+        usePointStyle: true,
+      },
+    },
+    tooltip: {
+      backgroundColor: '#0f1a2f',
+      borderColor: '#325278',
+      borderWidth: 1,
+      titleColor: '#f2f8ff',
+      bodyColor: '#d6e4f8',
+      padding: 10,
+    },
+  },
+  scales: {
+    x: {
+      grid: { color: 'rgba(141, 170, 203, 0.12)' },
+      ticks: { color: '#b9cce8' },
+    },
+    y: {
+      grid: { color: 'rgba(141, 170, 203, 0.16)' },
+      ticks: { color: '#b9cce8' },
+    },
+  },
+}
+
+const revenueBarData = computed<ChartData<'bar'>>(() => ({
+  labels: labels.value,
+  datasets: [
+    {
+      label: 'Revenue (USD)',
+      data: monthlyData.map((item) => item.revenue),
+      borderRadius: 6,
+      backgroundColor: colorByFocus('rgba(28, 197, 162, 0.95)', 'rgba(28, 197, 162, 0.30)'),
+      borderColor: colorByFocus('#22d3ac', 'rgba(34, 211, 172, 0.35)'),
+      borderWidth: 1,
+    },
+  ],
+}))
+
+const volumeLineData = computed<ChartData<'line'>>(() => ({
+  labels: labels.value,
+  datasets: [
+    {
+      label: 'Shipment Volume',
+      data: monthlyData.map((item) => item.shipmentVolume),
+      borderColor: '#8dc8ff',
+      backgroundColor: 'rgba(141, 200, 255, 0.2)',
+      pointBackgroundColor: colorByFocus('#c9e7ff', 'rgba(201, 231, 255, 0.35)'),
+      pointBorderColor: '#0f1a2f',
+      pointRadius: labels.value.map((label) =>
+        selectedMonth.value === 'All' ? 3 : label === selectedMonth.value ? 5 : 2,
+      ),
+      pointHoverRadius: 6,
+      borderWidth: 2.5,
+      tension: 0.36,
+    },
+  ],
+}))
+
+const deliveryAreaData = computed<ChartData<'line'>>(() => ({
+  labels: labels.value,
+  datasets: [
+    {
+      label: 'On-Time Delivery Rate (%)',
+      data: monthlyData.map((item) => item.onTimeRate),
+      borderColor: '#ffba73',
+      backgroundColor: 'rgba(255, 186, 115, 0.22)',
+      fill: true,
+      pointBackgroundColor: colorByFocus('#ffd9aa', 'rgba(255, 217, 170, 0.35)'),
+      pointRadius: labels.value.map((label) =>
+        selectedMonth.value === 'All' ? 3 : label === selectedMonth.value ? 5 : 2,
+      ),
+      pointHoverRadius: 6,
+      borderWidth: 2.4,
+      tension: 0.3,
+    },
+  ],
+}))
 </script>
 
 <template>
-  <v-container fluid class="dashboard pa-4 pa-md-6">
+  <v-app-bar flat border class="glass-bar">
+    <v-container fluid class="page-shell header-shell py-0">
+      <div class="desktop-brand align-center ga-3">
+        <div class="logo-lockup">
+          <v-img :src="logo" alt="FastForward Logistics logo" class="logo-image" contain />
+        </div>
+        <span class="header-divider" aria-hidden="true">|</span>
+        <div class="dashboard-title text-subtitle-1 font-weight-bold">Internal Operations Dashboard</div>
+      </div>
 
-    <!-- Hero Banner -->
-    <v-card class="mb-4 stagger-1" rounded="lg" border>
-      <v-card-text class="pa-5">
-        <v-row align="center" justify="space-between" no-gutters>
-          <v-col>
-            <div class="text-overline text-teal-lighten-1 mb-1">FastForward Logistics</div>
-            <h1 class="text-h4 font-weight-bold mb-2">Internal Operations Dashboard</h1>
-            <p class="text-body-2 text-medium-emphasis">
-              Single-source operational visibility for leadership across shipment volume, delivery
-              reliability, regional performance, and active exceptions.
-            </p>
-          </v-col>
-          <v-col cols="auto" class="mt-3 mt-sm-0 d-flex gap-2">
-            <StatusPill type="info" text="Live Prototype" class="font-weight-bold" />
-            <StatusPill type="neutral" text="Updated: 15 min ago" :show-icon="false" />
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
+      <div class="mobile-brand" aria-hidden="true">
+        <div class="mobile-favicon-wrap">
+          <v-img :src="favicon" alt="FastForward Logistics favicon" class="mobile-favicon" contain />
+        </div>
+      </div>
 
-    <!-- KPI Cards -->
-    <v-row class="mb-4 stagger-2">
-      <v-col cols="12" sm="6" lg="3">
-        <v-card rounded="lg" border height="100%">
-          <v-card-text class="pa-4">
-            <div class="text-overline text-medium-emphasis mb-1">Shipment Volume (8 Weeks)</div>
-            <div class="text-h4 font-weight-bold mb-2">{{ totalShipments.toLocaleString() }}</div>
-            <StatusPill type="positive" text="+8.4% vs prior cycle" />
-          </v-card-text>
-        </v-card>
-      </v-col>
+      <v-select
+        v-model="selectedMonth"
+        :items="monthOptions"
+        item-title="label"
+        item-value="value"
+        label="Month Filter"
+        variant="outlined"
+        density="comfortable"
+        hide-details
+        class="month-filter"
+      />
+    </v-container>
+  </v-app-bar>
 
-      <v-col cols="12" sm="6" lg="3">
-        <v-card rounded="lg" border height="100%">
-          <v-card-text class="pa-4">
-            <div class="text-overline text-medium-emphasis mb-1">On-Time Delivery</div>
-            <div class="text-h4 font-weight-bold mb-2">{{ latestOnTimeRate.toFixed(1) }}%</div>
-            <StatusPill
-              :type="onTimeDelta >= 0 ? 'positive' : 'negative'"
-              :text="`${onTimeDelta >= 0 ? '+' : ''}${onTimeDelta.toFixed(1)} pts vs last week`"
-            />
-          </v-card-text>
-        </v-card>
-      </v-col>
+  <v-main>
+    <v-container fluid class="dashboard py-4 py-md-6">
+      <div class="page-shell">
+      <v-card rounded="lg" border class="mb-4 summary-banner">
+        <v-card-text class="py-4 px-5 d-flex flex-wrap align-center justify-space-between ga-2">
+          <div>
+            <div class="text-overline text-medium-emphasis">Viewing</div>
+            <div class="text-h6 font-weight-bold">{{ kpiCurrent.scopeLabel }} Performance Snapshot</div>
+          </div>
+          <v-chip color="teal" variant="tonal" prepend-icon="mdi-chart-timeline-variant">
+            Local JSON Dataset (2025)
+          </v-chip>
+        </v-card-text>
+      </v-card>
 
-      <v-col cols="12" sm="6" lg="3">
-        <v-card rounded="lg" border height="100%">
-          <v-card-text class="pa-4">
-            <div class="text-overline text-medium-emphasis mb-1">Regional Health</div>
-            <div class="text-h4 font-weight-bold mb-2">2 Strong / 2 Watch+Risk</div>
-            <StatusPill type="warning" text="Southeast requires intervention" />
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" sm="6" lg="3">
-        <v-card rounded="lg" border height="100%">
-          <v-card-text class="pa-4">
-            <div class="text-overline text-medium-emphasis mb-1">Open Exceptions</div>
-            <div class="text-h4 font-weight-bold mb-2">{{ openExceptions.length }}</div>
-            <StatusPill type="critical" text="1 critical, 2 high priority" />
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <!-- Shipment Volume + On-Time Delivery -->
-    <v-row class="mb-4 stagger-3">
-      <v-col cols="12" md="6">
-        <v-card rounded="lg" border height="100%">
-          <v-card-item>
-            <v-card-title class="text-subtitle-1 font-weight-bold">Shipment Volume Overview</v-card-title>
-            <v-card-subtitle>Weekly throughput and on-time context</v-card-subtitle>
-          </v-card-item>
-          <v-card-text class="pt-2">
-            <div class="volume-grid" role="img" aria-label="Shipment volume by week">
-              <div v-for="week in shipmentTrend" :key="week.week" class="bar-wrap">
-                <div class="bar" :style="{ height: `${(week.volume / 3200) * 100}%` }" />
-                <div class="bar-week">{{ week.week }}</div>
-                <div class="bar-value">{{ week.volume }}</div>
+      <v-row class="mb-4">
+        <v-col v-for="card in kpiCards" :key="card.key" cols="12" sm="6" lg="3">
+          <v-card rounded="lg" border height="100%" class="kpi-card">
+            <v-card-text class="pa-4">
+              <div class="d-flex justify-space-between align-start mb-2">
+                <div class="text-overline text-medium-emphasis metric-label">{{ card.label }}</div>
+                <v-icon :icon="card.icon" color="info" size="22" />
               </div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
 
-      <v-col cols="12" md="6">
-        <v-card rounded="lg" border height="100%">
-          <v-card-item>
-            <v-card-title class="text-subtitle-1 font-weight-bold">On-Time Delivery Performance</v-card-title>
-            <v-card-subtitle>Performance consistency over the same period</v-card-subtitle>
-          </v-card-item>
-          <v-card-text class="pt-2">
-            <div v-for="week in shipmentTrend" :key="`${week.week}-rate`" class="mb-4">
-              <div class="d-flex justify-space-between mb-1">
-                <span class="text-caption text-medium-emphasis">{{ week.week }}</span>
-                <span class="text-caption font-weight-bold">{{ week.onTimeRate.toFixed(1) }}%</span>
+              <div class="text-h4 font-weight-bold mb-3">{{ card.value }}</div>
+
+              <div class="d-flex align-center ga-2 text-caption font-weight-medium">
+                <v-icon :icon="card.trend.icon" :color="card.trend.color" size="18" />
+                <span :class="`text-${card.trend.color}`">{{ card.trend.text }}</span>
               </div>
-              <v-progress-linear
-                :model-value="week.onTimeRate"
-                bg-color="blue-grey-darken-3"
-                color="teal"
-                rounded
-                height="8"
-              />
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
 
-    <!-- Regional Performance + Open Exceptions -->
-    <v-row class="stagger-4">
-      <v-col cols="12" md="7">
-        <v-card rounded="lg" border>
-          <v-card-item>
-            <v-card-title class="text-subtitle-1 font-weight-bold">Regional Performance</v-card-title>
-            <v-card-subtitle>Shipment load, reliability, delay trends, and risk status</v-card-subtitle>
-          </v-card-item>
-          <v-table density="comfortable">
-            <thead>
-              <tr>
-                <th v-for="h in regionHeaders" :key="h.key" class="text-left text-overline text-medium-emphasis">
-                  {{ h.title }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="region in regionalPerformance" :key="region.region">
-                <td>{{ region.region }}</td>
-                <td>{{ region.shipments.toLocaleString() }}</td>
-                <td>{{ region.onTimeRate.toFixed(1) }}</td>
-                <td>{{ region.avgDelayHours.toFixed(1) }}</td>
-                <td>{{ region.openExceptions }}</td>
-                <td>
-                  <StatusPill :type="regionPillType(region.status)" :text="region.status" shape="label" />
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card>
-      </v-col>
+              <div class="text-caption text-medium-emphasis mt-2">{{ card.helper }}</div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
-      <v-col cols="12" md="5">
-        <v-card rounded="lg" border height="100%">
-          <v-card-item>
-            <v-card-title class="text-subtitle-1 font-weight-bold">Open Exceptions</v-card-title>
-            <v-card-subtitle>Priority queue for immediate operational action</v-card-subtitle>
-          </v-card-item>
-          <v-list lines="three" bg-color="transparent">
-            <v-list-item
-              v-for="item in openExceptions"
-              :key="item.id"
-              class="mb-1"
-              rounded="lg"
-            >
-              <template #prepend>
-                <v-icon :style="{ color: item.priority === 'Critical' ? '#ffc5bf' : item.priority === 'High' ? '#ffd8a8' : '#a8d4ff' }" class="mt-1">mdi-alert-circle-outline</v-icon>
-              </template>
-              <template #title>
-                <span class="text-caption text-medium-emphasis">{{ item.id }}</span>
-              </template>
-              <template #subtitle>
-                <span class="text-wrap">{{ item.issue }}</span>
-                <div class="text-caption text-medium-emphasis mt-1">{{ item.owner }}</div>
-              </template>
-              <template #append>
-                <div class="d-flex flex-column align-end ga-1 ml-3">
-                  <StatusPill :type="priorityPillType(item.priority)" :text="item.priority" shape="label" size="x-small" />
-                  <span class="text-caption text-medium-emphasis text-no-wrap">ETA {{ item.etaHours }}h</span>
-                </div>
-              </template>
-            </v-list-item>
-          </v-list>
-        </v-card>
-      </v-col>
-    </v-row>
+      <v-row class="mb-4">
+        <v-col cols="12" lg="6">
+          <v-card rounded="lg" border>
+            <v-card-item>
+              <v-card-title class="text-subtitle-1 font-weight-bold">Revenue by Month</v-card-title>
+              <v-card-subtitle>Bar chart view of shipment value trend</v-card-subtitle>
+            </v-card-item>
+            <v-card-text>
+              <div class="chart-shell">
+                <Bar :data="revenueBarData" :options="barChartOptions" aria-label="Revenue bar chart" />
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-  </v-container>
+        <v-col cols="12" lg="6">
+          <v-card rounded="lg" border>
+            <v-card-item>
+              <v-card-title class="text-subtitle-1 font-weight-bold">Shipment Volume Trend</v-card-title>
+              <v-card-subtitle>Line chart for monthly shipment throughput</v-card-subtitle>
+            </v-card-item>
+            <v-card-text>
+              <div class="chart-shell">
+                <Line :data="volumeLineData" :options="lineChartOptions" aria-label="Shipment line chart" />
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col cols="12">
+          <v-card rounded="lg" border>
+            <v-card-item>
+              <v-card-title class="text-subtitle-1 font-weight-bold">On-Time Delivery Performance</v-card-title>
+              <v-card-subtitle>Full-year reliability with month-aware highlighting</v-card-subtitle>
+            </v-card-item>
+            <v-card-text>
+              <div class="chart-shell chart-shell--wide">
+                <Line :data="deliveryAreaData" :options="lineChartOptions" aria-label="On-time area chart" />
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+      </div>
+    </v-container>
+  </v-main>
 </template>
 
 <style scoped>
-.dashboard {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 10% 12%, rgba(20, 177, 157, 0.14), transparent 36%),
-    radial-gradient(circle at 84% 2%, rgba(255, 132, 77, 0.10), transparent 33%);
+.page-shell {
+  padding-inline: clamp(16px, 3.6vw, 48px);
 }
 
-.volume-grid {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  align-items: end;
-  gap: 0.6rem;
-  min-height: 200px;
-  padding-top: 0.4rem;
+.glass-bar {
+  backdrop-filter: blur(10px);
+  background: rgba(12, 20, 35, 0.88);
 }
 
-.bar-wrap {
+.glass-bar :deep(.v-toolbar__content) {
+  height: auto !important;
+  padding: 0;
+}
+
+.header-shell {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 24px;
+}
+
+.desktop-brand {
+  display: flex;
+  min-width: 0;
+}
+
+.month-filter {
+  flex: 1 1 220px;
+  max-width: 320px;
+  min-width: 180px;
+}
+
+.month-filter :deep(.v-field) {
+  width: 100%;
+}
+
+.mobile-brand {
+  display: none;
+}
+
+.mobile-favicon-wrap {
+  width: 32px;
+  height: 32px;
+}
+
+.mobile-favicon {
+  width: 100%;
   height: 100%;
 }
 
-.bar {
+.dashboard {
+  min-height: calc(100vh - 82px);
+  background:
+    radial-gradient(circle at 8% 8%, rgba(28, 197, 162, 0.16), transparent 34%),
+    radial-gradient(circle at 88% 0%, rgba(117, 166, 228, 0.16), transparent 34%),
+    linear-gradient(145deg, rgba(6, 12, 24, 0.92), rgba(8, 16, 30, 1));
+}
+
+.logo-lockup {
+  width: 136px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+}
+
+.header-divider {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 1.15rem;
+  line-height: 1;
+  padding-inline: 10px;
+}
+
+.dashboard-title {
+  color: #f5f9ff;
+}
+
+.logo-image {
   width: 100%;
-  border-radius: 0.45rem 0.45rem 0.25rem 0.25rem;
-  background: linear-gradient(180deg, #1cc5a2 0%, #0f8f86 100%);
-  box-shadow: 0 6px 18px rgba(10, 179, 153, 0.3);
-  animation: grow 850ms ease both;
+  height: 100%;
 }
 
-.bar-week {
-  margin-top: 0.45rem;
-  font-size: 0.72rem;
-  opacity: 0.7;
-  font-weight: 700;
+.summary-banner {
+  background: linear-gradient(120deg, rgba(19, 33, 58, 0.9), rgba(15, 28, 49, 0.9));
 }
 
-.bar-value {
-  font-size: 0.68rem;
-  opacity: 0.5;
+.kpi-card {
+  transition: transform 160ms ease, border-color 160ms ease;
 }
 
-.stagger-1,
-.stagger-2,
-.stagger-3,
-.stagger-4 {
-  opacity: 0;
-  transform: translateY(10px);
-  animation: rise 600ms ease forwards;
+.kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(109, 171, 241, 0.45);
 }
 
-.stagger-2 { animation-delay: 120ms; }
-.stagger-3 { animation-delay: 240ms; }
-.stagger-4 { animation-delay: 360ms; }
-
-@keyframes rise {
-  to { opacity: 1; transform: translateY(0); }
+.metric-label {
+  line-height: 1.3;
 }
 
-@keyframes grow {
-  from { height: 0; }
+.chart-shell {
+  height: 280px;
+}
+
+.chart-shell--wide {
+  height: 320px;
+}
+
+@media (max-width: 960px) {
+  .header-shell {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 10px;
+    padding-block: 24px;
+  }
+
+  .month-filter {
+    flex: 1 1 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .chart-shell,
+  .chart-shell--wide {
+    height: 260px;
+  }
+}
+
+@media (max-width: 800px) {
+  .header-shell {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 40px;
+    row-gap: 0;
+    padding-block: 24px;
+  }
+
+  .desktop-brand {
+    display: none;
+  }
+
+  .mobile-brand {
+    display: flex;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  .mobile-favicon-wrap {
+    width: 30px;
+    height: 30px;
+  }
+
+  .month-filter {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .month-filter :deep(.v-field) {
+    width: 100%;
+  }
+
+  .header-shell {
+    row-gap: 0;
+  }
 }
 </style>

@@ -1,0 +1,14 @@
+[
+  { "month": "January", "revenue": 1280000, "shipmentVolume": 8200, "onTimeRate": 93.1, "orders": 4020, "exceptions": 188 },
+  { "month": "February", "revenue": 1340000, "shipmentVolume": 7900, "onTimeRate": 93.6, "orders": 4095, "exceptions": 179 },
+  { "month": "March", "revenue": 1420000, "shipmentVolume": 8450, "onTimeRate": 94.0, "orders": 4210, "exceptions": 172 },
+  { "month": "April", "revenue": 1495000, "shipmentVolume": 8720, "onTimeRate": 94.4, "orders": 4330, "exceptions": 168 },
+  { "month": "May", "revenue": 1565000, "shipmentVolume": 9010, "onTimeRate": 94.9, "orders": 4415, "exceptions": 159 },
+  { "month": "June", "revenue": 1630000, "shipmentVolume": 8860, "onTimeRate": 95.2, "orders": 4520, "exceptions": 152 },
+  { "month": "July", "revenue": 1705000, "shipmentVolume": 9140, "onTimeRate": 95.4, "orders": 4600, "exceptions": 148 },
+  { "month": "August", "revenue": 1780000, "shipmentVolume": 9360, "onTimeRate": 95.7, "orders": 4695, "exceptions": 143 },
+  { "month": "September", "revenue": 1855000, "shipmentVolume": 9540, "onTimeRate": 96.0, "orders": 4780, "exceptions": 136 },
+  { "month": "October", "revenue": 1935000, "shipmentVolume": 9880, "onTimeRate": 96.3, "orders": 4890, "exceptions": 130 },
+  { "month": "November", "revenue": 2010000, "shipmentVolume": 10320, "onTimeRate": 96.6, "orders": 5015, "exceptions": 124 },
+  { "month": "December", "revenue": 2100000, "shipmentVolume": 11050, "onTimeRate": 97.0, "orders": 5160, "exceptions": 118 }
+]
