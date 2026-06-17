@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useDisplay } from 'vuetify'
 import { Bar, Line } from 'vue-chartjs'
 import {
   BarElement,
@@ -58,6 +59,18 @@ type KpiCard = {
 
 const monthlyData = operationsData as MonthRecord[]
 const selectedMonth = ref('All')
+
+const { width } = useDisplay()
+// Computed height fed to v-app-bar so Vuetify's layout system correctly
+// offsets v-main beneath the auto-height header at every breakpoint.
+// Desktop (>960px): 24+24 padding + 52px logo row = 100px
+// Tablet (800–960px): 24+24 padding + 52px logo + 10px gap + 44px filter = 154px
+// Mobile (≤800px): 24+24 padding + 44px filter row = 92px
+const barHeight = computed(() => {
+  if (width.value <= 800) return 92
+  if (width.value <= 960) return 154
+  return 100
+})
 const fallbackRecord: MonthRecord = {
   month: 'N/A',
   revenue: 0,
@@ -347,8 +360,8 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
 </script>
 
 <template>
-  <v-app-bar flat border class="glass-bar">
-    <v-container fluid class="page-shell header-shell py-0">
+  <v-app-bar flat border class="glass-bar" :height="barHeight">
+    <v-container fluid class="page-shell header-shell">
       <div class="desktop-brand align-center ga-3">
         <div class="logo-lockup">
           <v-img :src="logo" alt="FastForward Logistics logo" class="logo-image" contain />
@@ -378,7 +391,7 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
   </v-app-bar>
 
   <v-main>
-    <v-container fluid class="dashboard py-4 py-md-6">
+    <v-container fluid class="dashboard">
       <div class="page-shell">
       <v-card rounded="lg" border class="mb-4 summary-banner">
         <v-card-text class="py-4 px-5 d-flex flex-wrap align-center justify-space-between ga-2">
@@ -475,8 +488,9 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
 }
 
 .glass-bar :deep(.v-toolbar__content) {
-  height: auto !important;
-  padding: 0;
+  /* Remove default horizontal padding; let page-shell handle it. */
+  padding-inline: 0;
+  height: 100%;
 }
 
 .header-shell {
@@ -484,7 +498,7 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-block: 24px;
+  padding-block: 24px !important;
 }
 
 .desktop-brand {
@@ -517,6 +531,8 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
 }
 
 .dashboard {
+  padding-top: 32px;
+  padding-bottom: 32px;
   min-height: calc(100vh - 82px);
   background:
     radial-gradient(circle at 8% 8%, rgba(28, 197, 162, 0.16), transparent 34%),
@@ -577,7 +593,6 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
     flex-wrap: wrap;
     align-items: center;
     row-gap: 10px;
-    padding-block: 24px;
   }
 
   .month-filter {
@@ -597,8 +612,6 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: 40px;
-    row-gap: 0;
-    padding-block: 24px;
   }
 
   .desktop-brand {
@@ -618,17 +631,12 @@ const deliveryAreaData = computed<ChartData<'line'>>(() => ({
 
   .month-filter {
     flex: 1 1 auto;
-    width: 100%;
     max-width: none;
     min-width: 0;
   }
 
   .month-filter :deep(.v-field) {
     width: 100%;
-  }
-
-  .header-shell {
-    row-gap: 0;
   }
 }
 </style>
